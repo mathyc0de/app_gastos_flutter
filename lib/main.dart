@@ -4,7 +4,6 @@ import 'globals.dart' as globals;
 
 
 void main() async {
-  
   runApp(const GastosApp());
 }
 

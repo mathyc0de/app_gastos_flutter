@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'produtos.dart';
 import 'globals.dart' as globals;
@@ -5,6 +7,7 @@ import 'package:month_picker_dialog/month_picker_dialog.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'dart:math' as math;
+import 'db.dart' as database;
 
 
 
@@ -22,6 +25,8 @@ class _TelaInicialState extends State<TelaInicial> {
   final TextEditingController metaGasto = TextEditingController();
   @override
   Widget build(BuildContext context) {
+    final db = database.DatabaseHelper();
+    db.init();
     return Scaffold(
       appBar: AppBar(
         actions: [IconButton(
@@ -33,12 +38,16 @@ class _TelaInicialState extends State<TelaInicial> {
             if (newDate == null) return;
             setState(() {
               date = newDate;
-              if (globals.comprasMonth.containsKey(mmyy(date))==false) {
-               Month month = defMonth(mmyy(date));
-              globals.comprasMonth[mmyy(date)] = month; 
+             if (db.query("SELECT * FROM meses WHERE mes='$date'") == 0 )  {
+               db.insert({"mes": date, "metagasto": 0, "gastototal": 0}, "meses");
+               db.insert({"_id": 0, "mes": date, "productname": "Disponível", "productvalue": 0, "buy": "01-01-1900", "color": "#FFFFFF"}, "gastos");
               }
-            });
 
+
+            });
+            List<Map<String, dynamic>> dados = await db.query("SELECT * FROM gastos WHERE data='$date");
+            for ()
+            print(dados);
             }, icon: const Icon(
               Icons.calendar_today), 
               tooltip: "Mês selecionado: ${date.month}", 
@@ -50,7 +59,7 @@ class _TelaInicialState extends State<TelaInicial> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [SfCircularChart(
             series: [DoughnutSeries<ChartData, String>(
-              dataSource: globals.comprasMonth[mmyy(date)]?.chartData,
+              dataSource: ChartData(x: , y: y, color: color),
               pointColorMapper: (ChartData data, _) => colorFromHex(data.color),
               xValueMapper: (ChartData data, _) => data.x,
                yValueMapper: (ChartData data, _) => data.y,
@@ -68,8 +77,7 @@ class _TelaInicialState extends State<TelaInicial> {
               showDialog(context: context, 
               builder: (context) =>  AlertDialog(
                 content: SingleChildScrollView(
-                child: inputText(context, 'Meta de gasto R\$', metaGasto, keyboardType: TextInputType.number),
-                ),
+                child: inputText(context, 'Meta de gasto R\$', metaGasto, keyboardType: TextInputType.number)),
                 actions: [ElevatedButton(
                   onPressed: () {
                     staticMetaGastos = double.parse(metaGasto.text);

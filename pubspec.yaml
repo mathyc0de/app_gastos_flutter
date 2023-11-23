@@ -40,6 +40,9 @@ dependencies:
   syncfusion_flutter_charts: ^22.2.11
   flutter_colorpicker: ^1.0.3
   flutter_launcher_icons: ^0.13.1
+  path:
+  path_provider:
+  sqflite:
 
 dev_dependencies:
   flutter_test:
