@@ -26,6 +26,7 @@ class _TelaInicialState extends State<TelaInicial> {
   @override
   Widget build(BuildContext context) {
     final db = database.DatabaseHelper();
+    List<Map<String, dynamic>> dados;
     db.init();
     return Scaffold(
       appBar: AppBar(
@@ -45,8 +46,7 @@ class _TelaInicialState extends State<TelaInicial> {
 
 
             });
-            List<Map<String, dynamic>> dados = await db.query("SELECT * FROM gastos WHERE data='$date");
-            for ()
+            dados = await db.query("SELECT * FROM gastos WHERE data='$date");
             print(dados);
             }, icon: const Icon(
               Icons.calendar_today), 
@@ -59,7 +59,7 @@ class _TelaInicialState extends State<TelaInicial> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [SfCircularChart(
             series: [DoughnutSeries<ChartData, String>(
-              dataSource: ChartData(x: , y: y, color: color),
+              dataSource: dataExtract(dados) ,
               pointColorMapper: (ChartData data, _) => colorFromHex(data.color),
               xValueMapper: (ChartData data, _) => data.x,
                yValueMapper: (ChartData data, _) => data.y,
@@ -292,4 +292,15 @@ SizedBox inputText(BuildContext context, String label, TextEditingController con
           border: const OutlineInputBorder(),
           labelText: label),
           controller: controller));
+}
+
+List<ChartData> dataExtract(List<Map<String, dynamic>> data) {
+  List <ChartData> extractedData = [];
+  for (Map<String, dynamic> x in data) {
+    var name = x["productname"];
+    var value = x["productvalue"];
+    String color = x["color"];
+    extractedData.add(ChartData(x: name, y: value, color: color));
+  }
+  return extractedData;
 }

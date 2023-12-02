@@ -17,3 +17,5 @@ final Month month = Month(
 final Map<String, Month> comprasMonth = {
   "${staticmonth.month}/${staticmonth.year}" : month
 };
+
+var data;
