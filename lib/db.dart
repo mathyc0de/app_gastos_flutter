@@ -51,17 +51,6 @@ class DatabaseHelper {
     return result;
   }
 
-    // Future<int> update(Map<String, dynamic> row) async {
-  //   int id = row[columnId];
-  //   return await _db.update(
-  //     table,
-  //     row,
-  //     where: '$columnId = ?',
-  //     whereArgs: [id],
-  //   );
-  // }
-
-
   // Future<int> delete(int id) async {
   //   return await _db.delete(
   //     table,

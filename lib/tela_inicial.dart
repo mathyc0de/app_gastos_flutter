@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'produtos.dart';
 import 'globals.dart' as globals;
@@ -12,6 +10,7 @@ import 'db.dart' as database;
 
 
 DateTime date = DateTime.now();
+final db = database.DatabaseHelper();
 
 class TelaInicial extends StatefulWidget { 
   const TelaInicial({super.key, required this.title, required this.listaprod});
@@ -25,8 +24,6 @@ class _TelaInicialState extends State<TelaInicial> {
   final TextEditingController metaGasto = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    final db = database.DatabaseHelper();
-    List<Map<String, dynamic>> dados;
     db.init();
     return Scaffold(
       appBar: AppBar(
@@ -39,15 +36,15 @@ class _TelaInicialState extends State<TelaInicial> {
             if (newDate == null) return;
             setState(() {
               date = newDate;
-             if (db.query("SELECT * FROM meses WHERE mes='$date'") == 0 )  {
-               db.insert({"mes": date, "metagasto": 0, "gastototal": 0}, "meses");
-               db.insert({"_id": 0, "mes": date, "productname": "Disponível", "productvalue": 0, "buy": "01-01-1900", "color": "#FFFFFF"}, "gastos");
+              String data = '${date.month}/${date.year}';
+             if (db.query("SELECT * FROM meses WHERE mes='$data'") == 0 )  {
+               db.insert({"mes": data, "metagasto": 0, "gastototal": 0}, "meses");
+               db.insert({"_id": 0, "mes": data, "productname": "Disponível", "productvalue": 0, "buy": "01-01-1900", "color": "#FFFFFF"}, "gastos");
               }
 
 
             });
-            dados = await db.query("SELECT * FROM gastos WHERE data='$date");
-            print(dados);
+            globals.dados = await db.query("SELECT * FROM gastos WHERE data=''${date.month}/${date.year}'");
             }, icon: const Icon(
               Icons.calendar_today), 
               tooltip: "Mês selecionado: ${date.month}", 
@@ -59,7 +56,7 @@ class _TelaInicialState extends State<TelaInicial> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [SfCircularChart(
             series: [DoughnutSeries<ChartData, String>(
-              dataSource: dataExtract(dados) ,
+              dataSource: dataExtract(globals.dados),
               pointColorMapper: (ChartData data, _) => colorFromHex(data.color),
               xValueMapper: (ChartData data, _) => data.x,
                yValueMapper: (ChartData data, _) => data.y,
@@ -79,8 +76,15 @@ class _TelaInicialState extends State<TelaInicial> {
                 content: SingleChildScrollView(
                 child: inputText(context, 'Meta de gasto R\$', metaGasto, keyboardType: TextInputType.number)),
                 actions: [ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     staticMetaGastos = double.parse(metaGasto.text);
+                  db.query("UPDATE meses SET metagasto = $staticMetaGastos WHERE mes = '${date.month}/${date.year}'");
+                  List<Map<String, dynamic>> soma = await db.query("SELECT productvalue FROM gastos WHERE mes = '${date.month}/${date.year}'");
+                  int result = 0;
+                  print(soma);
+                  // for (int i=0; i < soma.length; i++) {
+                  // result += soma[i];
+                  // }
                     if (staticMetaGastos - globals.comprasMonth[mmyy(date)]!.gastoTotal < 0) {
                       ChartData gastomaximo = ChartData(x: 'Disponível', 
                     y: 0, 
@@ -239,7 +243,8 @@ class _AddProdutoState extends State<AddProduto> {
     
   }
 
-  ListTile produtolist(BuildContext context, Produtos produto) {
+  List<ListTile> produtolist(BuildContext context, List<Map<String,dynamic>> dado) {
+    
     return ListTile(
       title: textalign(produto.productName, produto.productValue, colorFromHex(produto.textcolor), produto.time)
 
@@ -250,16 +255,23 @@ class _AddProdutoState extends State<AddProduto> {
       side: MaterialStatePropertyAll(
         BorderSide(
           color: Colors.black26,))),
-    onPressed: () {
-      Produtos produto = Produtos(productName: productName.text, productValue: productValue.text, time: DateTime.now(), textcolor: colorToHex(currentColor)); 
-      ChartData chartData = ChartData(
-        color: colorToHex(currentColor), 
-        x: produto.productName, 
-        y: double.parse(produto.productValue));
-    globals.comprasMonth[mmyy(date)]!.listaprod.add(produtolist(context, produto)); 
-    globals.comprasMonth[mmyy(date)]!.listaprod.add(const Divider(height: 0));
-    globals.comprasMonth[mmyy(date)]!.gastoTotal += double.parse(produto.productValue);
-    ChartData gastomaximo = ChartData(x: 'Disponível', y: staticMetaGastos - globals.comprasMonth[mmyy(date)]!.gastoTotal, color: colorToHex(Colors.white));
+    onPressed: () async{
+      int id = await db.queryRowCount("gastos");
+      db.insert({"_id": id,
+            "mes": "${date.month}/${date.year}",
+            "productname": productName,
+            "productvalue": productValue,
+            "buy": "${date.day}/${date.month}",
+            "color": colorToHex(currentColor)}, "gastos");
+    //   Produtos produto = Produtos(productName: productName.text, productValue: productValue.text, time: DateTime.now(), textcolor: colorToHex(currentColor)); 
+    //   ChartData chartData = ChartData(
+    //     color: colorToHex(currentColor), 
+    //     x: produto.productName, 
+    //     y: double.parse(produto.productValue));
+    // globals.comprasMonth[mmyy(date)]!.listaprod.add(produtolist(context, produto)); 
+    // globals.comprasMonth[mmyy(date)]!.listaprod.add(const Divider(height: 0));
+    // globals.comprasMonth[mmyy(date)]!.gastoTotal += double.parse(produto.productValue);
+    // ChartData gastomaximo = ChartData(x: 'Disponível', y: staticMetaGastos - globals.comprasMonth[mmyy(date)]!.gastoTotal, color: colorToHex(Colors.white));
     if (staticMetaGastos>0) {
       if (staticMetaGastos - globals.comprasMonth[mmyy(date)]!.gastoTotal > 0) {
     setState(() {

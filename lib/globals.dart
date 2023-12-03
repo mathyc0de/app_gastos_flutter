@@ -3,6 +3,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'produtos.dart';
 
 DateTime staticmonth = DateTime.now();
+List<Map<String, dynamic>> dados = [];
 final List<Widget> listaprod = [
   const ListTile(
         title: Text("Disponível: R\$0", 
@@ -17,5 +18,3 @@ final Month month = Month(
 final Map<String, Month> comprasMonth = {
   "${staticmonth.month}/${staticmonth.year}" : month
 };
-
-var data;
