@@ -24,15 +24,15 @@ class DatabaseHelper {
   Future _onCreate(Database db, int version) async {
     await db.execute('''
           CREATE TABLE meses (
-            mes DATA,
+            mes TEXT NOT NULL,
             metagasto INTEGER
             gastototal INTEGER
           )
           ''');
     await db.execute('''
           CREATE TABLE gastos (
-            _id INTEGER PRIMARY KEY,
-            mes DATA,
+            _id INTEGER PRIMARY KEY IDENTITY(1,1),
+            mes TEXT NOT NULL,
             productname TEXT NOT NULL,
             productvalue INTEGER NOT NULL,
             buy DATA

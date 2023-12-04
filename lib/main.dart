@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'tela_inicial.dart';
-import 'globals.dart' as globals;
+import 'home.dart';
 
 
-void main() async {
+void main() {
   runApp(const GastosApp());
 }
 
@@ -21,9 +20,8 @@ class GastosApp extends StatelessWidget { /// Inicia o [key] para criar subclass
         useMaterial3: true),
         darkTheme: ThemeData.dark(
           useMaterial3: true),
-        home: TelaInicial(
-          title: 'Gastos', 
-          listaprod: globals.listaprod)
+        home: const TelaInicial(
+          title: 'Gastos')
         );
   }
 }
