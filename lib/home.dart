@@ -28,10 +28,29 @@ class TelaInicial extends StatefulWidget {
 double staticMetaGastos = 0;
 class _TelaInicialState extends State<TelaInicial> {
   final TextEditingController metaGasto = TextEditingController();
+  bool fetching = true;
+  @override
+  void initState() {
+    super.initState();
+    getData2();
+  }
+
+  void getData2() async {
+    await db.init();
+    String data = '${date.month}/${date.year}';
+    List<Map<String, dynamic>> query = await db.query("SELECT * FROM meses WHERE mes = '$data'");
+    if (query.isEmpty) {
+            db.insert({"mes": data, "metagasto": 0.0, "gastototal": 0.0}, "meses");
+            db.insert({"mes": data, "productname": "Disponível", "productvalue": 0.0, "buy": "01-01-1900", "color": "#FFFFFF"}, "gastos");
+          }
+    globals.dados = await dateGetter(data);
+    print(globals.dados);
+    setState(() {
+      fetching = false;
+    });
+  }
   @override
   Widget build(BuildContext context) {
-    db.init();
-    var dados = dateGetter(date);
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -46,12 +65,17 @@ class _TelaInicialState extends State<TelaInicial> {
             setState(() {
               date = newDate;
               String data = '${date.month}/${date.year}';
-             if (db.query("SELECT * FROM meses WHERE mes='$data'") == 0 )  {
-               db.insert({"mes": data, "metagasto": 0, "gastototal": 0}, "meses");
-               db.insert({"_id": 0, "mes": data, "productname": "Disponível", "productvalue": 0, "buy": "01-01-1900", "color": "#FFFFFF"}, "gastos");
+             if (db.query("SELECT * FROM meses WHERE mes= '$data'") == [] )  {
+               db.insert({"mes": data, "metagasto": 0.0, "gastototal": 0.0}, "meses");
+               db.insert({
+            "mes": data,
+            "productname": "Disponível",
+            "productvalue": 0.0,
+            "buy":  data,
+            "color": "#FFFFFF"}, "gastos");
               }
             });
-            globals.data = await db.query("SELECT * FROM gastos WHERE data=''${date.month}/${date.year}'");
+            globals.data = await db.query("SELECT * FROM gastos WHERE mes= '${date.month}/${date.year}'");
             }, icon: const Icon(
               Icons.calendar_today), 
               tooltip: "Mês selecionado: ${date.month}", 
@@ -61,8 +85,12 @@ class _TelaInicialState extends State<TelaInicial> {
 
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title)), 
-        body:
-        Column(
+        body: fetching
+        ?  const Center(
+              child: CircularProgressIndicator(),
+            ) 
+        
+        : Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             
@@ -79,9 +107,8 @@ class _TelaInicialState extends State<TelaInicial> {
                 useSeriesColor: true),
 
 
-            )],
+            )],),
 
-          ),
           ElevatedButton(
             child: const Text("Definir meta de gasto"),
             onPressed: () {
@@ -90,30 +117,32 @@ class _TelaInicialState extends State<TelaInicial> {
               builder: (context) =>  AlertDialog(
                 content: SingleChildScrollView(
                 child: inputText(context, 'Meta de gasto R\$', metaGasto, keyboardType: TextInputType.number)),
-                actions: [
+               actions: [
                   
                   
-                  ElevatedButton(
-                  onPressed: () async {
-                    staticMetaGastos = double.parse(metaGasto.text);
+                ElevatedButton(
+                   onPressed: () async {
+                     staticMetaGastos = double.parse(metaGasto.text);
                   db.query("UPDATE meses SET metagasto = $staticMetaGastos WHERE mes = '${date.month}/${date.year}'");
-                  List<Map<String, dynamic>> soma = await db.query("SELECT productvalue FROM gastos WHERE mes = '${date.month}/${date.year}'");
-                  int result = 0;
-                  print(soma);
-                  // for (int i=0; i < soma.length; i++) {
-                  // result += soma[i];
-                  // }
+                  double result = 0.0;
+                  List soma = await db.query("SELECT productvalue FROM gastos WHERE mes = '${date.month}/${date.year}' AND productname != 'Disponível'");
+                  for (double values in soma) {
+                    result += values;
+                  }
+                  setState(() {
+                    db.query("UPDATE gastos SET productvalue = ${staticMetaGastos - result} WHERE mes = '${date.month}/${date.year}' AND productname = 'Disponível'");
+                  });
+                  print(result);
                   },
-            child: const Text('Definir')),
+            child: const Text('Definir'))
+            ]));}),
 
 
-
-          Expanded(
-            child: ListView(
-              children: produtolist(context, dados)
-              )),
-
-
+              Expanded(
+                child: 
+                  ListView(
+                      children: produtolist(context, globals.dados))
+              ),
             IconButton(onPressed: () {
             Navigator.push(context, 
             MaterialPageRoute(
@@ -125,18 +154,18 @@ class _TelaInicialState extends State<TelaInicial> {
               iconSize: 65, 
               color: Colors.blue,
               icon: const Icon(
-                Icons.add_circle)),
+                Icons.add_circle))
 
 
 
-            ],
-          ), 
+            // ],
+          ]), 
         );
       }
-    )
-  ]
-)
-);
+//     )
+//   ]
+// )
+// );
   }
     
 SizedBox inputText(BuildContext context, String label, TextEditingController controller, {keyboardType}) {
@@ -150,22 +179,25 @@ SizedBox inputText(BuildContext context, String label, TextEditingController con
 
   
 
-List<Widget> produtolist(BuildContext context, List<Map<String,dynamic>> dado) {
+List<Widget> produtolist(BuildContext context,  List<Map<String,dynamic>> dado) {
   List<Widget> result = [];
   for (int i=0; i<dado.length; i++) {
     String name = dado[i]["productname"];
-    double value = dado[i]["productvalue"];
+    double value = dado[i]["productvalue"] + .0;
     String data = dado[i]["mes"];
     result.add(
       ListTile(title: Text("$name ${' ' * 20} $value ${' ' * 20} $data")));
       result.add(const Divider(height: 0));}
   return result;
   }
+
+
+
+
   Future<List<Map<String,dynamic>>> dateGetter(data) async {
-    return await db.query("SELECT * FROM gastos WHERE mes = $data");
+    return await db.query("SELECT * FROM gastos WHERE mes= '$data'");
   }
   
-}
 class AddProduto extends StatefulWidget {
   const AddProduto({super.key, required this.date});
   final DateTime date;
@@ -249,12 +281,12 @@ OutlinedButton submit(BuildContext context) {
     onPressed: () async{
       db.insert({
             "mes": "${date.month}/${date.year}",
-            "productname": productName,
-            "productvalue": productValue,
-            "buy": date,
+            "productname": productName.text,
+            "productvalue": double.parse(productValue.text) + .0,
+            "buy": "${date.month}/${date.year}",
             "color": colorToHex(currentColor)}, "gastos");
     db.query("UPDATE meses SET gastototal = $staticMetaGastos WHERE mes = '${date.month}/${date.year}'");
-    Navigator.push(context,
+    Navigator.pushReplacement(context,
               MaterialPageRoute(builder:  (context) => const TelaInicial(title: 'Gastos')));
     },
     child: const Text("Submit"));
@@ -265,8 +297,8 @@ OutlinedButton submit(BuildContext context) {
 List<ChartData> dataExtract(List<Map<String, dynamic>> data) {
   List <ChartData> extractedData = [];
   for (Map<String, dynamic> x in data) {
-    var name = x["productname"];
-    var value = x["productvalue"];
+    String name = x["productname"];
+    double value = x["productvalue"] + .0;
     String color = x["color"];
     extractedData.add(ChartData(x: name, y: value, color: color));
   }

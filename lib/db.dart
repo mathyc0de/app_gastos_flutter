@@ -25,17 +25,17 @@ class DatabaseHelper {
     await db.execute('''
           CREATE TABLE meses (
             mes TEXT NOT NULL,
-            metagasto INTEGER
+            metagasto INTEGER,
             gastototal INTEGER
           )
           ''');
     await db.execute('''
           CREATE TABLE gastos (
-            _id INTEGER PRIMARY KEY IDENTITY(1,1),
+            _id INTEGER PRIMARY KEY,
             mes TEXT NOT NULL,
             productname TEXT NOT NULL,
             productvalue INTEGER NOT NULL,
-            buy DATA
+            buy DATA,
             color TEXT
           )
 ''');
@@ -60,6 +60,6 @@ class DatabaseHelper {
   // }
 
 Future<int> insert(Map<String, dynamic> row, String table) async {
-    return await _db.insert(table, row);
+    return  await _db.insert(table, row);
   }
 }
